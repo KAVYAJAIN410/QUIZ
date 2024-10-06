@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 1.5vw;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 2vw;
+            max-width: 50vw;
+            width: 100%;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 2vw;
+            color: #333;
+            font-size: 2vw;
+        }
+
+        .instructions {
+            margin-bottom: 2vw;
+            font-size: 1.2vw;
+            color: #555;
+        }
+
+        button {
+            padding: 1vw;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 1vw;
+            font-size: 1.5vw;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Quiz</h2>
+        <div class="instructions">
+            <p>Welcome to the quiz! Please read the instructions carefully before you start:</p>
+            <ul>
+                <li>This is a multiple correct quiz.</li>
+                <li>Quiz time: 10 minutes.</li>
+                <li>Each question may have multiple correct answers.</li>
+                <li>Marking scheme:
+                    <ul>
+                        <li>+1 point for each question with all correct answers selected.</li>
+                        <li>-0.25 points for each incorrect answer.</li>
+                        <li>If more than one option correct negative marking is 0.25 * Number of correct options</li>
+                        <li>Partial marking will be awarded based on the number of correct options selected.</li>
+                    </ul>
+                </li>
+                <li>Do not refresh or close the quiz once it starts. It will auto-submit when time is up.</li>
+            </ul>
+        </div>
+        <button id="quizButton">Loading....</button>
+    </div>
+
+    <script>
+        let check = 1;
+        window.onload = async function() {
+            try {
+                const response = await fetch('/check-quiz-attempt', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                const quizButton = document.getElementById('quizButton');
+
+                if (response.ok && data.quizAttempted) {
+                    quizButton.textContent = 'View Result';
+                    check = 0;
+                } else {
+                    quizButton.textContent = 'Attempt Quiz';
+                    check = 1;
+                }
+
+                quizButton.addEventListener('click', start);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+
+        async function start() {
+            try {
+                const response = await fetch('/start', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('text/html')) {
+                        // If the response is an HTML page, redirect to it
+                        const html = await response.text();
+                        document.open();
+                        document.write(html);
+                        document.close();
+                    } else {
+                        throw new Error('Unexpected content type');
+                    }
+                } else {
+                    throw new Error('Failed to start quiz');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while starting the quiz. Please try again.');
+            }
+        }   
+    </script>
+</body>
+</html>

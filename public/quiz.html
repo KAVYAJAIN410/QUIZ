@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Example</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            user-select: none;
+            background-image: url(./kk.avif);
+            background-size: cover;
+            font-weight: bold;
+            font-size: 20px;
+            font-family: "Fira Sans", sans-serif;
+        }
+        #timer {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #question_Box {
+            min-height: 10vh;
+            min-width: 80vw;
+            margin: 0 5px;
+            border: 2px solid black;
+            border-radius: 40px;
+        }
+        .option {
+            min-height: 20px;
+            width: 300px;
+            border: 2px solid black;
+            border-radius: 30px;
+            margin: 1vw 5vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+        #question {
+            margin: 2vh 5vw;
+        }
+        #option_container {
+            margin-top: 5vw;
+        }
+        .option_pair {
+            display: flex;
+            justify-content: center;
+        }
+        @media only screen and (max-width: 780px) {
+            .option_pair {
+                display: block;
+            }
+            body {
+                background-position: 1400px 0;
+            }
+            .media_centre {
+                display: flex;
+                justify-content: center;
+            }
+        }
+        .option.active {
+            background-color: #007BFF;
+            border-color: #007BFF;
+            color: #FFFFFF;
+        }
+        .op {
+            padding-left: 10px;
+        }
+        .nav {
+            width: 120px;
+            height: 50px;
+            background: linear-gradient(135deg, #007BFF, #0056b3);
+            border-radius: 25px;
+            margin: 2vw 5px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background 0.3s ease, transform 0.3s ease;
+        }
+        .nav:hover {
+            background: linear-gradient(135deg, #0056b3, #007BFF);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div style="display: flex; justify-content:center">
+        <img src="./pngwing.com (21).png" style="height: 25px;">
+        <div id="timer"></div>
+    </div>
+    <div style="display: flex;justify-content:center">
+        <div id="question_Box" style="align-content: center;">
+            <p id="question">Loading question...</p>
+        </div>
+    </div>
+    <div class="media_centre">
+        <div id="option_container">
+            <div class="option_pair">
+                <div class="option" id="0"><p class="op">Option 1</p></div>
+                <div class="option" id="1"><p class="op">Option 2</p></div>
+            </div>
+            <div class="option_pair">
+                <div class="option" id="2"><p class="op">Option 3</p></div>
+                <div class="option" id="3"><p class="op">Option 4</p></div>
+            </div>
+        </div>
+    </div>
+    <div style="display: flex; justify-content: center; margin-top: 10px;">
+        <div id="prev" class="nav"><p>Prev</p></div>
+        <div id="next" class="nav"><p>Next</p></div>
+    </div>
+
+    <script>
+        let username = ''; 
+
+        function getUserDataKey(key) {
+            return `${username}_${key}`;
+        }
+
+        function saveUserData(key, value) {
+            localStorage.setItem(getUserDataKey(key), JSON.stringify(value));
+        }
+
+        function getUserData(key) {
+            return JSON.parse(localStorage.getItem(getUserDataKey(key)));
+        }
+
+        function clearUserData() {
+            localStorage.removeItem(getUserDataKey('responses'));
+            localStorage.removeItem(getUserDataKey('currentQuestionIndex'));
+            localStorage.removeItem(getUserDataKey('startTime'));
+        }
+
+        let arr = getUserData('responses') || [];
+        let currentQuestionIndex = getUserData('currentQuestionIndex') || 0;
+        let questions = [];
+        let timerInterval = null;
+
+        document.getElementById("next").addEventListener("click", () => {
+            let temp = [];
+            for (let i = 0; i <= 3; i++) {
+                document.getElementById(`${i}`).style.removeProperty('background-color');
+                if (document.getElementById(`${i}`).classList.contains('active')) {
+                    temp.push(i);
+                }
+            }
+            arr[currentQuestionIndex] = temp; // Store response for the current question
+            saveUserData('responses', arr);  // Save responses to local storage
+            if (currentQuestionIndex == questions.length - 1) {
+                document.getElementById('next').innerText = "Submit";
+                sendTheAnswers();
+            } else {
+                currentQuestionIndex++;
+                saveUserData('currentQuestionIndex', currentQuestionIndex);  // Save current question index to local storage
+                displayQuestion(currentQuestionIndex);
+            }
+        });
+
+        for (let i = 0; i <= 3; i++) {
+            document.getElementById(`${i}`).addEventListener("click", (event) => {
+                const b = event.currentTarget;
+                if (b.classList.contains('active')) {
+                    b.classList.remove('active');
+                } else {
+                    b.classList.add('active');
+                }
+            });
+        }
+
+        document.getElementById("prev").addEventListener("click", () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                saveUserData('currentQuestionIndex', currentQuestionIndex);
+                displayQuestion(currentQuestionIndex);
+            } else {
+                alert('You are at the first question.');
+            }
+        });
+
+        async function startTimer() {
+            const response = await fetch('/timer');
+            const data = await response.json();
+            let timer = data.remainingTime;
+
+            const display = document.getElementById("timer");
+
+            timerInterval = setInterval(async function () {
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    await sendTheAnswers();
+                    displaySubmissionMessage();
+                    return;
+                }
+                let minutes = parseInt(timer / 60, 10);
+                let seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                display.textContent = minutes + ":" + seconds;
+                timer--;
+            }, 1000);
+        }
+
+        async function displayQuestion(index) {
+            if (index >= questions.length) {
+                alert('Quiz completed!');
+                return;
+            }
+            const questionElement = document.getElementById('question');
+            questionElement.innerText = questions[index].question;
+            const options = document.getElementsByClassName('op');
+            for (let i = 0; i < 4; i++) {
+                options[i].innerText = questions[index].options[i];
+                if (arr[index] && arr[index].includes(i)) {
+                    document.getElementById(`${i}`).classList.add('active');
+                } else {
+                    document.getElementById(`${i}`).classList.remove('active');
+                }
+            }
+        }
+
+        async function sendTheAnswers() {
+            try {
+                const response = await fetch('/responses', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(arr)
+                });
+                if (response.ok) {
+                    finish();
+                    clearUserData();
+                }
+            } catch (error) {
+                alert("SOME THING WENT WRONG");
+                console.error('Error sending responses:', error);
+            }
+        }
+
+        function finish() {
+            window.location.href = 'view-result.html';
+        }
+
+        function displaySubmissionMessage() {
+            window.location.href = 'view-result.html';
+        }
+
+        async function fetchQuestions() {
+            try {
+                const response = await fetch('/questions');
+                const data = await response.json();
+                questions = data.questions;
+                startTimer();
+                displayQuestion(currentQuestionIndex);
+            } catch (error) {
+                alert("SOME THING WENT WRONG");
+                console.error('Error fetching questions:', error);
+            }
+        }
+
+        async function sendPartialResponses() {
+            try {
+                const response = await fetch('/responses', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(arr)
+                });
+                if (response.ok) {
+                    console.log('Partial responses sent successfully');
+                }
+            } catch (error) {
+                console.error('Error sending partial responses:', error);
+            }
+        }
+
+        window.onload = function () {
+            if (!localStorage.getItem(getUserDataKey('startTime'))) {
+                localStorage.setItem(getUserDataKey('startTime'), Date.now());
+            }
+            fetchQuestions();
+        };
+
+        window.addEventListener('unload', async (event) => {
+            sendPartialResponses();
+            clearUserData();
+        });
+    </script>
+</body>
+</html>

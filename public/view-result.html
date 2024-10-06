@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .option {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .correct {
+            background-color: #d4edda;
+        }
+        .incorrect {
+            background-color: #f8d7da;
+        }
+        .user-answer {
+            color: orange;
+        }
+        .correct-answer {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quiz Results</h1>
+        <div id="score"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function fetchResults() {
+            try {
+                const response = await fetch('/view-result-data');
+                const data = await response.json();
+
+                document.getElementById('score').innerText = `Your Score: ${data.score}`;
+
+                const resultsContainer = document.getElementById('results');
+                resultsContainer.innerHTML = '';
+
+                const optionLetters = ['a', 'b', 'c', 'd'];
+
+                data.results.forEach((result, index) => {
+                    const questionElement = document.createElement('div');
+                    questionElement.className = 'question';
+
+                    const questionText = document.createElement('p');
+                    questionText.innerText = `${index + 1}. ${result.question}`;
+                    questionElement.appendChild(questionText);
+
+                    if (result.options && result.options.length > 0) {
+                        result.options.forEach((option, i) => {
+                            const optionElement = document.createElement('span');
+                            optionElement.className = 'option';
+
+                            if (result.correctAnswers.includes(option)) {
+                                optionElement.classList.add('correct-answer');
+                            }
+                            if (result.userAnswers.includes(option) && !result.correctAnswers.includes(option)) {
+                                optionElement.classList.add('user-answer');
+                            }
+                            if (result.userAnswers.includes(option) && result.correctAnswers.includes(option)) {
+                                optionElement.classList.add('correct');
+                            }
+
+                            optionElement.innerText = `${optionLetters[i]}. ${option}`;
+                            questionElement.appendChild(optionElement);
+                            questionElement.appendChild(document.createElement('br'));
+                        });
+
+                        const userAnswersElement = document.createElement('p');
+                        userAnswersElement.innerHTML = `<strong>Your Answers:</strong> ${result.userAnswers.map(index => optionLetters[index]).join(', ')}`;
+                        questionElement.appendChild(userAnswersElement);
+                        
+                        const correctAnswersElement = document.createElement('p');
+                        correctAnswersElement.innerHTML = `<strong>Correct Answers:</strong> ${result.correctAnswers.map(index => optionLetters[index]).join(', ')}`;
+                        questionElement.appendChild(correctAnswersElement);
+
+                        const pointsAwardedElement = document.createElement('p');
+                        pointsAwardedElement.innerHTML = `<strong>Points Awarded:</strong> ${result.pointsAwarded}`;
+                        questionElement.appendChild(pointsAwardedElement);
+                    } else {
+                        const errorElement = document.createElement('p');
+                        errorElement.innerText = 'No options available for this question.';
+                        questionElement.appendChild(errorElement);
+                    }
+
+                    resultsContainer.appendChild(questionElement);
+                });
+            } catch (error) {
+                console.error('Error fetching results:', error);
+            }
+        }
+
+        fetchResults();
+    </script>
+</body>
+</html>
