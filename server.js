@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const uri = process.env.MONGO_URI;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
