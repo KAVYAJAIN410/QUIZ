@@ -1,120 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Results</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .question {
-            margin-bottom: 20px;
-        }
-        .option {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .correct {
-            background-color: #d4edda;
-        }
-        .incorrect {
-            background-color: #f8d7da;
-        }
-        .user-answer {
-            color: orange;
-        }
-        .correct-answer {
-            color: green;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Results</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 80%;
+      max-width: 800px;
+      margin: 30px 0;
+    }
+    .question {
+      margin-bottom: 25px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 15px;
+    }
+    .option {
+      display: block;
+      margin: 5px 0;
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+    .correct {
+      background-color: #d4edda;
+      color: #155724;
+      font-weight: bold;
+    }
+    .incorrect {
+      background-color: #f8d7da;
+      color: #721c24;
+      font-weight: bold;
+    }
+    .user-answer {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    .correct-answer {
+      color: green;
+      font-weight: bold;
+    }
+    #score {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Quiz Results</h1>
-        <div id="score"></div>
-        <div id="results"></div>
-    </div>
+  <div class="container">
+    <h1>Quiz Results</h1>
+    <div id="score"></div>
+    <div id="results"></div>
+  </div>
 
-    <script>
-        async function fetchResults() {
-            try {
-                const response = await fetch('/view-result-data');
-                const data = await response.json();
+  <script>
+    async function fetchResults() {
+      try {
+        const response = await fetch('/view-result-data');
+        const data = await response.json();
 
-                document.getElementById('score').innerText = `Your Score: ${data.score}`;
+        document.getElementById('score').innerText = `Your Score: ${data.score}`;
 
-                const resultsContainer = document.getElementById('results');
-                resultsContainer.innerHTML = '';
+        const resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = '';
 
-                const optionLetters = ['a', 'b', 'c', 'd'];
+        const optionLetters = ['a', 'b', 'c', 'd'];
 
-                data.results.forEach((result, index) => {
-                    const questionElement = document.createElement('div');
-                    questionElement.className = 'question';
+        data.results.forEach((result, index) => {
+          const questionElement = document.createElement('div');
+          questionElement.className = 'question';
 
-                    const questionText = document.createElement('p');
-                    questionText.innerText = `${index + 1}. ${result.question}`;
-                    questionElement.appendChild(questionText);
+          const questionText = document.createElement('p');
+          questionText.innerText = `${index + 1}. ${result.question || "Question text not found"}`;
+          questionElement.appendChild(questionText);
 
-                    if (result.options && result.options.length > 0) {
-                        result.options.forEach((option, i) => {
-                            const optionElement = document.createElement('span');
-                            optionElement.className = 'option';
+          if (result.options && result.options.length > 0) {
+            result.options.forEach((option, i) => {
+              const optionElement = document.createElement('span');
+              optionElement.className = 'option';
 
-                            if (result.correctAnswers.includes(option)) {
-                                optionElement.classList.add('correct-answer');
-                            }
-                            if (result.userAnswers.includes(option) && !result.correctAnswers.includes(option)) {
-                                optionElement.classList.add('user-answer');
-                            }
-                            if (result.userAnswers.includes(option) && result.correctAnswers.includes(option)) {
-                                optionElement.classList.add('correct');
-                            }
+              // Mark correct, incorrect, and user-selected options properly
+              if (result.correctAnswers.includes(i) && result.userAnswers.includes(i)) {
+                optionElement.classList.add('correct');
+                optionElement.innerText = `${optionLetters[i]}. ${option} `;
+              } else if (result.correctAnswers.includes(i)) {
+                optionElement.classList.add('correct-answer');
+                optionElement.innerText = `${optionLetters[i]}. ${option} `;
+              } else if (result.userAnswers.includes(i) && !result.correctAnswers.includes(i)) {
+                optionElement.classList.add('incorrect');
+                optionElement.innerText = `${optionLetters[i]}. ${option} `;
+              } else {
+                optionElement.innerText = `${optionLetters[i]}. ${option}`;
+              }
 
-                            optionElement.innerText = `${optionLetters[i]}. ${option}`;
-                            questionElement.appendChild(optionElement);
-                            questionElement.appendChild(document.createElement('br'));
-                        });
+              questionElement.appendChild(optionElement);
+              questionElement.appendChild(document.createElement('br'));
+            });
 
-                        const userAnswersElement = document.createElement('p');
-                        userAnswersElement.innerHTML = `<strong>Your Answers:</strong> ${result.userAnswers.map(index => optionLetters[index]).join(', ')}`;
-                        questionElement.appendChild(userAnswersElement);
-                        
-                        const correctAnswersElement = document.createElement('p');
-                        correctAnswersElement.innerHTML = `<strong>Correct Answers:</strong> ${result.correctAnswers.map(index => optionLetters[index]).join(', ')}`;
-                        questionElement.appendChild(correctAnswersElement);
+           
 
-                        const pointsAwardedElement = document.createElement('p');
-                        pointsAwardedElement.innerHTML = `<strong>Points Awarded:</strong> ${result.pointsAwarded}`;
-                        questionElement.appendChild(pointsAwardedElement);
-                    } else {
-                        const errorElement = document.createElement('p');
-                        errorElement.innerText = 'No options available for this question.';
-                        questionElement.appendChild(errorElement);
-                    }
+            const correctAnswersElement = document.createElement('p');
+            correctAnswersElement.innerHTML = `<strong>Correct Answers:</strong> ${
+              result.correctAnswers.map(i => optionLetters[i]).join(', ')
+            }`;
+            questionElement.appendChild(correctAnswersElement);
 
-                    resultsContainer.appendChild(questionElement);
-                });
-            } catch (error) {
-                console.error('Error fetching results:', error);
-            }
-        }
+            
+          } else {
+            const errorElement = document.createElement('p');
+            errorElement.innerText = 'No options available for this question.';
+            questionElement.appendChild(errorElement);
+          }
 
-        fetchResults();
-    </script>
+          resultsContainer.appendChild(questionElement);
+        });
+      } catch (error) {
+        console.error('Error fetching results:', error);
+      }
+    }
+    
+
+    fetchResults();
+  </script>
 </body>
 </html>

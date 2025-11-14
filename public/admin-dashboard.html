@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+
+<style>
+    /* ---------- Global Layout ---------- */
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #1e1e2f, #2d2d44);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 40px 20px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 900px;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 40px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        font-size: 35px;
+    }
+
+    /* ---------- Card Component ---------- */
+    .card {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        border-radius: 14px;
+        padding: 30px;
+        margin-bottom: 40px;
+        box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+        transition: 0.3s ease;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 45px rgba(0,0,0,0.35);
+    }
+
+    .card h2 {
+        margin-top: 0;
+        font-size: 24px;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    /* ---------- Inputs ---------- */
+    input, textarea {
+        width: 100%;
+        padding: 14px;
+        margin: 10px 0 20px;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.12);
+        color: white;
+        font-size: 15px;
+        transition: 0.2s ease;
+        outline: none;
+    }
+
+    input:focus, textarea:focus {
+        background: rgba(255,255,255,0.20);
+        box-shadow: 0 0 0 2px #6aa9ff;
+    }
+
+    textarea {
+        min-height: 80px;
+        resize: none;
+    }
+
+    /* ---------- Button ---------- */
+    .btn {
+        background: #4c8dff;
+        padding: 14px;
+        width: 100%;
+        border: none;
+        color: white;
+        border-radius: 10px;
+        font-weight: bold;
+        font-size: 15px;
+        cursor: pointer;
+        transition: 0.25s ease;
+        letter-spacing: 0.5px;
+    }
+
+    .btn:hover {
+        background: #3b71d4;
+        transform: translateY(-2px);
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* ---------- Message ---------- */
+    .message {
+        margin-top: 15px;
+        font-size: 15px;
+        font-weight: 500;
+        min-height: 22px;
+    }
+    .error { color: #ff6b6b; }
+    .success { color: #4cd39f; }
+
+    /* ---------- Loader inside button ---------- */
+    .loader {
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto;
+        display: none;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>Admin Dashboard</h1>
+
+    <!-- ADD QUESTION -->
+    <div class="card">
+        <h2>Add Manual Question</h2>
+
+        <input id="id" type="number" placeholder="Question ID (number)">
+        <textarea id="question" placeholder="Enter question"></textarea>
+        <textarea id="options" placeholder="Options (comma separated)"></textarea>
+        <input id="answer" placeholder="Correct answer index (Ex: 1 OR 1,2)">
+
+        <button class="btn" onclick="addQuestion()" id="btnAdd">Add Question</button>
+        <div id="loaderAdd" class="loader"></div>
+        <div id="msg" class="message"></div>
+    </div>
+
+
+    <!-- GENERATE QUIZ -->
+    <div class="card">
+        <h2>Generate Quiz Using AI</h2>
+
+        <input id="topic" placeholder="Enter topic (Ex: Java, ML, Networking)">
+        
+        <button class="btn" onclick="generateQuiz()" id="btnGen">Generate Quiz</button>
+        <div id="loaderGen" class="loader"></div>
+        <div id="genMsg" class="message"></div>
+    </div>
+
+</div>
+
+
+<script>
+function showMessage(id, text, isErr=false) {
+    const el = document.getElementById(id);
+    el.innerText = text;
+    el.className = "message " + (isErr ? "error" : "success");
+}
+
+/* ---------------- ADD MANUAL QUESTION ---------------- */
+async function addQuestion() {
+    const ID = Number(document.getElementById("id").value);
+    const question = document.getElementById("question").value.trim();
+    const optionsText = document.getElementById("options").value.trim();
+    const answerText = document.getElementById("answer").value.trim();
+
+    if (!ID || isNaN(ID)) return showMessage("msg", "❌ ID must be a number", true);
+    if (!question) return showMessage("msg", "❌ Question cannot be empty", true);
+    if (!optionsText) return showMessage("msg", "❌ Options cannot be empty", true);
+    if (!answerText) return showMessage("msg", "❌ Answer cannot be empty", true);
+
+    const options = optionsText.split(",").map(o => o.trim());
+    const answer = answerText.split(",").map(n => Number(n.trim()));
+
+    if (options.length !== 4)
+        return showMessage("msg", "❌ Exactly 4 options required", true);
+
+    if (answer.some(isNaN))
+        return showMessage("msg", "❌ Answer indices must be numbers", true);
+
+    // UI state
+    document.getElementById("btnAdd").style.display = "none";
+    document.getElementById("loaderAdd").style.display = "block";
+
+    try {
+        const res = await fetch("/admin/add-question", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ID, question, options, answer })
+        });
+
+        const data = await res.json();
+        showMessage("msg", data.message);
+    } catch {
+        showMessage("msg", "❌ Server error", true);
+    }
+
+    document.getElementById("btnAdd").style.display = "block";
+    document.getElementById("loaderAdd").style.display = "none";
+}
+
+
+/* ---------------- GENERATE QUIZ BY AI ---------------- */
+async function generateQuiz() {
+    const topic = document.getElementById("topic").value.trim();
+
+    if (!topic)
+        return showMessage("genMsg", "❌ Topic cannot be empty", true);
+
+    document.getElementById("btnGen").style.display = "none";
+    document.getElementById("loaderGen").style.display = "block";
+
+    try {
+        const res = await fetch("/admin/generate-quiz", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic })
+        });
+
+        const data = await res.json();
+        showMessage("genMsg", data.message || "✔ Quiz generated!");
+    } catch {
+        showMessage("genMsg", "❌ Error generating quiz", true);
+    }
+
+    document.getElementById("btnGen").style.display = "block";
+    document.getElementById("loaderGen").style.display = "none";
+}
+</script>
+
+</body>
+</html>

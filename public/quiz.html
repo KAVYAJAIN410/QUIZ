@@ -120,6 +120,21 @@
 
     <script>
         let username = ''; 
+        function collectResponses() {
+  const questions = document.querySelectorAll(".question");
+  const responses = [];
+
+  questions.forEach((questionDiv) => {
+    const selected = [];
+    const options = questionDiv.querySelectorAll("input[type='checkbox']");
+    options.forEach((opt, index) => {
+      if (opt.checked) selected.push(index);
+    });
+    responses.push(selected);
+  });
+
+  return responses;
+}
 
         function getUserDataKey(key) {
             return `${username}_${key}`;
@@ -296,6 +311,7 @@
             sendPartialResponses();
             clearUserData();
         });
+
     </script>
 </body>
 </html>
